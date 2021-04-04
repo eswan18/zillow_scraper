@@ -4,7 +4,7 @@
 This repo allows the user to scrape Zillow for properties in Chicago meeting certain criteria\*.
 It's divided into two parts: a scraper and a processing pipeline.
 
-The **scraper** pulls all properties added to Zillow within the last week and stores them as a JSON file in raw_data, named by date.
+The **scraper** pulls all properties added to Zillow within the last week that meet the criteria and stores them as a JSON file in `raw_data/`, named by date.
 For example, data pulled on Jan 13, 2021 would be stored in `raw_data/20210113.json`.
 The scraper is invoked as follows:
 ```bash
