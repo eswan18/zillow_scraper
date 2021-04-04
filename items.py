@@ -1,6 +1,8 @@
 import json
 from typing import Optional, List, Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+
+import pandas as pd
 
 
 @dataclass
@@ -17,4 +19,4 @@ class Property:
     json: Optional[Dict]
 
     def to_json(self):
-        return json.dumps(self.as_dict)
+        return json.dumps(asdict(self))
