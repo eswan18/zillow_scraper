@@ -2,7 +2,10 @@ import sys
 import time
 import json
 import re
-from typing import Optional, Union, Iterable
+import logging
+import datetime as dt
+import random
+from typing import Optional, Union, Iterable, overload, Literal
 
 import requests
 from requests.exceptions import HTTPError
@@ -14,13 +17,33 @@ from ..items import Property
 from .zillow import get_search_page
 
 
-def property_from_card(card: Tag) -> Property:
+@overload
+def property_from_card(
+    card: Tag,
+    suppress_errors: Literal[False] = False
+) -> Property: ...
+
+@overload
+def property_from_card(
+    card: Tag,
+    suppress_errors: Literal[True]
+) -> Optional[Property]: ...
+
+
+def property_from_card(card, suppress_errors=False) -> Property:
+    # This just calls the function again, but with errors caught.
+    if suppress_errors:
+        try:
+            return property_from_card(card, suppress_errors=False)
+        except Exception as exc:
+            logging.warning('Failed to parse property card.')
+            return None
     prop_id = card.article.attrs["id"]
     details_card = card.article.find("ul", class_="list-card-details")
     details = [detail.text for detail in details_card.children]
     if daydiv := card.find("div", text=re.compile(r"days? on Zillow")):
         days_on_zillow_str = daydiv.text
-        days_on_zillow = re.match(r"(\d+) day", days_on_zillow_str).group(1)
+        days_on_zillow = re.match(r"(\d+) day", days_on_zillow_str).group(1)  # type: ignore
     else:
         # We might be wrong, but usually if the "days" string isn't found, it's
         # a different string like "1 hour ago" indicating less than a day.
@@ -29,7 +52,7 @@ def property_from_card(card: Tag) -> Property:
     address = card.find("address").text
     # Price text is sometimes "$1,500/mo", "$1,300+ 1bd", and "$1,700 1 bd".
     raw_price = card.find("div", class_="list-card-price").text
-    price_str = re.match(r"\$(.*?)(\+?)[\s/]", raw_price).group(1)
+    price_str = re.match(r"\$(.*?)(\+?)[\s/]", raw_price).group(1)  # type: ignore
     price = int(price_str.replace(",", ""))
     j_script = card.find("script", {"type": "application/ld+json"})
     if j_script is not None:
@@ -39,7 +62,7 @@ def property_from_card(card: Tag) -> Property:
         zipcode = j["address"]["postalCode"]
     else:
         j = lat = lon = zipcode = None
-    return Property(
+    prop = Property(
         _id=prop_id,
         price=price,
         address=address,
@@ -51,6 +74,8 @@ def property_from_card(card: Tag) -> Property:
         days_on_zillow=days_on_zillow,
         json=j,
     )
+    logging.info('Successfully parsed property card.')
+    return prop
 
 
 def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
@@ -60,10 +85,13 @@ def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
         raise ValueError("Ambiguous situation in parsing -- too many photo-cards")
     else:
         prop_cards = potential_prop_cards[0]
-    return (
-        property_from_card(card)
-        for card in prop_cards.children
-        if card.name == "li" and card.article is not None
+    return filter(
+        lambda x: x is not None,
+        (
+            property_from_card(card)
+            for card in prop_cards.children
+            if card.name == "li" and card.article is not None
+        )
     )
 
 
@@ -83,14 +111,18 @@ def get_next_property(
         records = extract_properties(page)
         yield from records
         page_num += 1
-        time.sleep(2)
+        # Simulate normal human behavior.
+        delay = 12 * random.betavariate(2, 5)
+        time.sleep(delay)
 
 
 if __name__ == '__main__':
     with requests.Session() as session:
         if len(sys.argv) > 1:
-            max_pages = int(sys.argv[1])
+            max_pages: Optional[int] = int(sys.argv[1])
         else:
             max_pages = None
         properties = get_next_property(session, max_pages)
-        df = pd.DataFrame(properties)
+        df = pd.DataFrame(properties).set_index('_id')
+        today = dt.date.today().strftime('%Y%m%d')
+        df.to_json(f'raw_data/{today}.json')

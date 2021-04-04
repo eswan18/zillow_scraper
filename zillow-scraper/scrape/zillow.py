@@ -1,4 +1,4 @@
-import urllib
+from urllib.parse import quote as url_quote
 import json
 from typing import Any, Dict
 
@@ -61,7 +61,7 @@ def make_query_state(page_num: int = 0) -> Dict[str, Any]:
 
 def get_search_page(session: requests.Session, page_num: int):
     q_state = make_query_state(page_num)
-    formatted_q_state = urllib.parse.quote(json.dumps(q_state))
+    formatted_q_state = url_quote(json.dumps(q_state))
     formatted_url = f"{CHI_URL}/?searchQueryState={formatted_q_state}"
     response = session.get(formatted_url, headers=HEADERS)
     response.raise_for_status()

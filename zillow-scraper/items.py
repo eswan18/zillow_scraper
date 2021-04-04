@@ -13,7 +13,7 @@ class Property:
     zipcode: Optional[str]
     url: str
     details: List[str]
-    days_on_zillow: int
+    days_on_zillow: Optional[int]
     json: Optional[Dict]
 
     def to_json(self):
