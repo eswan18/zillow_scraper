@@ -8,7 +8,7 @@ The **scraper** pulls all properties added to Zillow within the last week and st
 For example, data pulled on Jan 13, 2021 would be stored in `raw_data/20210113.json`.
 The scraper is invoked as follows:
 ```bash
-python zillow-scraper.scrape [n-pages]
+python -m zillow-scraper.scrape [n-pages]
 ```
 The `n-pages` argument is optional, and indicates how many search pages to search through before stopping.
 If omitted, the scraper will exhaust all pages.
