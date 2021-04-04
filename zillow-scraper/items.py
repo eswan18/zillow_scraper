@@ -2,8 +2,6 @@ import json
 from typing import Optional, List, Dict
 from dataclasses import dataclass, asdict
 
-import pandas as pd
-
 
 @dataclass
 class Property:

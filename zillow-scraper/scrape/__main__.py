@@ -4,12 +4,13 @@ import re
 from typing import Optional, Union, Iterable
 
 import requests
+from requests.exceptions import HTTPError
 from bs4.element import Tag
 from bs4 import BeautifulSoup
 import pandas as pd
 
-from items import Property
-from zillow import get_search_page
+from ..items import Property
+from .zillow import get_search_page
 
 
 def parse_property_card(card: Tag) -> Property:
@@ -73,12 +74,18 @@ def get_next_property(
     while True:
         if max_pages and page_num >= max_pages:
             break
-        page = get_search_page(session=s, page_num=page_num)
+        try:
+            page = get_search_page(session=s, page_num=page_num)
+        except HTTPError:
+            # Assume we've hit the end of the results.
+            break
         records = get_properties_from_content(page)
         yield from records
         page_num += 1
         time.sleep(2)
 
-with requests.Session() as s:
-    props = get_next_property(s, 2)
-    df = pd.DataFrame(props)
+
+if __name__ == '__main__':
+    with requests.Session() as s:
+        props = get_next_property(s, 2)
+        df = pd.DataFrame(props)
