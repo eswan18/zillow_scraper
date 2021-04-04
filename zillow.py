@@ -1,3 +1,10 @@
+import urllib
+import json
+from typing import Any, Dict
+
+import requests
+
+
 CHI_URL = "https://www.zillow.com/chicago-il/rentals/"
 HEADERS = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -6,6 +13,7 @@ HEADERS = {
     "upgrade-insecure-requests": "1",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36",
 }
+
 
 def make_query_state(page_num: int = 0) -> Dict[str, Any]:
     # The below reflects page 0 of a search for:
@@ -47,13 +55,14 @@ def make_query_state(page_num: int = 0) -> Dict[str, Any]:
     }
     # If we're on a page other than 0, we need to add that to the query.
     if page_num > 0:
-        query_state['pagination'] = {'currentPage': page_num}
+        query_state["pagination"] = {"currentPage": page_num}
     return query_state
 
 
-def get_page(page_num: int):
-        q_state = make_query_state(page_num)
-        formatted_q_state = urllib.parse.quote(json.dumps(q_state))
-        formatted_url = f"{chi_url}/?searchQueryState={formatted_q_state}"
-        response = s.get(formatted_url, headers=headers)
-        return response
+def get_search_page(session: requests.Session, page_num: int):
+    q_state = make_query_state(page_num)
+    formatted_q_state = urllib.parse.quote(json.dumps(q_state))
+    formatted_url = f"{CHI_URL}/?searchQueryState={formatted_q_state}"
+    response = session.get(formatted_url, headers=HEADERS)
+    response.raise_for_status()
+    return response.content
