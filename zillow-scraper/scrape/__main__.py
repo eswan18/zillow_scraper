@@ -1,3 +1,4 @@
+import sys
 import time
 import json
 import re
@@ -75,7 +76,7 @@ def get_next_property(
         if max_pages and page_num >= max_pages:
             break
         try:
-            page = get_search_page(session=s, page_num=page_num)
+            page = get_search_page(session=session, page_num=page_num)
         except HTTPError:
             # Assume we've hit the end of the results.
             break
@@ -86,10 +87,10 @@ def get_next_property(
 
 
 if __name__ == '__main__':
-    with requests.Session() as s:
+    with requests.Session() as session:
         if len(sys.argv) > 1:
             max_pages = int(sys.argv[1])
         else:
             max_pages = None
-            properties = get_next_property(s, max_pages)
+        properties = get_next_property(session, max_pages)
         df = pd.DataFrame(properties)
