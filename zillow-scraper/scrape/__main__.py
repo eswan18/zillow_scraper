@@ -13,7 +13,7 @@ from ..items import Property
 from .zillow import get_search_page
 
 
-def parse_property_card(card: Tag) -> Property:
+def property_from_card(card: Tag) -> Property:
     prop_id = card.article.attrs["id"]
     details_card = card.article.find("ul", class_="list-card-details")
     details = [detail.text for detail in details_card.children]
@@ -52,7 +52,7 @@ def parse_property_card(card: Tag) -> Property:
     )
 
 
-def get_properties_from_content(content: Union[str, bytes]) -> Iterable[Property]:
+def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
     soup = BeautifulSoup(content, "html.parser")
     potential_prop_cards = soup.find_all("ul", {"class": {"photo-cards"}})
     if len(potential_prop_cards) > 1:
@@ -60,7 +60,7 @@ def get_properties_from_content(content: Union[str, bytes]) -> Iterable[Property
     else:
         prop_cards = potential_prop_cards[0]
     return (
-        parse_property_card(card)
+        property_from_card(card)
         for card in prop_cards.children
         if card.name == "li" and card.article is not None
     )
@@ -79,7 +79,7 @@ def get_next_property(
         except HTTPError:
             # Assume we've hit the end of the results.
             break
-        records = get_properties_from_content(page)
+        records = extract_properties(page)
         yield from records
         page_num += 1
         time.sleep(2)
@@ -87,5 +87,9 @@ def get_next_property(
 
 if __name__ == '__main__':
     with requests.Session() as s:
-        props = get_next_property(s, 2)
-        df = pd.DataFrame(props)
+        if len(sys.argv) > 1:
+            max_pages = int(sys.argv[1])
+        else:
+            max_pages = None
+            properties = get_next_property(s, max_pages)
+        df = pd.DataFrame(properties)
