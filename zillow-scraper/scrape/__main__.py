@@ -17,6 +17,8 @@ from ..items import Property
 from .zillow import get_search_page
 
 
+logging.basicConfig(level=logging.DEBUG)
+
 @overload
 def property_from_card(
     card: Tag,
@@ -85,7 +87,7 @@ def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
         raise ValueError("Ambiguous situation in parsing -- too many photo-cards")
     else:
         prop_cards = potential_prop_cards[0]
-    return filter(
+    result = filter(
         lambda x: x is not None,
         (
             property_from_card(card)
@@ -93,6 +95,8 @@ def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
             if card.name == "li" and card.article is not None
         )
     )
+    logging.info('Returned generator of properties from page.')
+    return result
 
 
 def get_next_property(
@@ -105,6 +109,7 @@ def get_next_property(
             break
         try:
             page = get_search_page(session=session, page_num=page_num)
+            logging.info('Successfully fetched new page.')
         except HTTPError:
             # Assume we've hit the end of the results.
             break
@@ -114,6 +119,7 @@ def get_next_property(
         # Simulate normal human behavior.
         delay = 12 * random.betavariate(2, 5)
         time.sleep(delay)
+        logging.DEBUG(f'Waited {delay} seconds')
 
 
 if __name__ == '__main__':
@@ -123,6 +129,8 @@ if __name__ == '__main__':
         else:
             max_pages = None
         properties = get_next_property(session, max_pages)
-        df = pd.DataFrame(properties).set_index('_id')
+        # Originally I thought I could set the DF index to '_id' but it isn't
+        # unique, and that breaks the .to_json() call later.
+        df = pd.DataFrame(properties)
         today = dt.date.today().strftime('%Y%m%d')
-        df.to_json(f'raw_data/{today}.json')
+        df.to_json(f'raw_data/{today}.json', index=False)
