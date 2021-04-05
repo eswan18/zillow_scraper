@@ -83,7 +83,10 @@ def property_from_card(card, suppress_errors=False) -> Property:
 def extract_properties(content: Union[str, bytes]) -> Iterable[Property]:
     soup = BeautifulSoup(content, "html.parser")
     potential_prop_cards = soup.find_all("ul", {"class": {"photo-cards"}})
-    if len(potential_prop_cards) > 1:
+    if len(potential_prop_cards) == 0:
+        logging.info('Found page with zero prop cards')
+        return []
+    elif len(potential_prop_cards) > 1:
         raise ValueError("Ambiguous situation in parsing -- too many photo-cards")
     else:
         prop_cards = potential_prop_cards[0]
@@ -119,7 +122,7 @@ def get_next_property(
         # Simulate normal human behavior.
         delay = 12 * random.betavariate(2, 5)
         time.sleep(delay)
-        logging.DEBUG(f'Waited {delay} seconds')
+        logging.debug(f'Waited {delay} seconds')
 
 
 if __name__ == '__main__':
@@ -133,4 +136,6 @@ if __name__ == '__main__':
         # unique, and that breaks the .to_json() call later.
         df = pd.DataFrame(properties)
         today = dt.date.today().strftime('%Y%m%d')
-        df.to_json(f'raw_data/{today}.json', index=False)
+        filename = f'raw_data/{today}.json'
+        df.to_json(filename)
+        logging.info(f'Wrote data to {filename}')
