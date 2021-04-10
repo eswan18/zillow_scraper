@@ -23,3 +23,15 @@ where `<date>` is replaced with the date of the file to be processed (e.g 202104
 
 
 \* The city and criteria could be modified but are not parameterized.
+
+
+## Installing
+
+I did this using a virtual environment, but that was a pain -- geopandas has complicated dependencies.
+I would recommend creating a conda environment using:
+```bash
+conda create -n zillow-scraper python=3.9 pandas matplotlib geopy geopandas beautifulsoup requests
+```
+I haven't done this, but I think it should handle the hard parts of the dependencies.
+
+If you wish to use a virtual environment, before installing from the requirements file (`pip install -r requirements.txt`) I think you'll need to install [GDAL](https://gdal.org) first, which I was able to do on a Mac with `brew install GDAL`.
