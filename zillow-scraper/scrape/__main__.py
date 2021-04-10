@@ -57,13 +57,14 @@ def property_from_card(card, suppress_errors=False) -> Property:
     price_str = re.match(r"\$(.*?)(\+?)[\s/]", raw_price).group(1)  # type: ignore
     price = int(price_str.replace(",", ""))
     j_script = card.find("script", {"type": "application/ld+json"})
+    j = lat = lon = zipcode = None
     if j_script is not None:
         j = json.loads(j_script.contents[0])
-        lat = j["geo"].get("latitude")
-        lon = j["geo"].get("longitude")
-        zipcode = j["address"]["postalCode"]
-    else:
-        j = lat = lon = zipcode = None
+        if "geo" in j:
+            lat = j["geo"].get("latitude")
+            lon = j["geo"].get("longitude")
+        if "address" in j:
+            zipcode = j["address"].get("postalCode")
     prop = Property(
         _id=prop_id,
         price=price,
