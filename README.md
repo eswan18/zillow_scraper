@@ -14,7 +14,12 @@ The `max-pages` argument is optional, and indicates how many search pages to sea
 If omitted, the scraper will exhaust all pages.
 (Providing `max-pages` is mainly useful for testing.)
 
-The **pipeline** hasn't been built yet.
+The **pipeline** just does some basic cleaning on the scraped data.
+It is invoked with
+```bash
+python -m zillow_scraper.process <date>
+```
+where `<date>` is replaced with the date of the file to be processed (e.g 20210402).
 
 
 \* The city and criteria could be modified but are not parameterized.
